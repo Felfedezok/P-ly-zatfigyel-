@@ -6,9 +6,6 @@ from google import genai
 import requests
 from bs4 import BeautifulSoup
 
-# ==========================================
-# IDE ÍRD BE A FIGYELNI KÍVÁNT OLDALAK CÍMÉT:
-# ==========================================
 CEL_OLDALAK = [
     "https://palyazat.gov.hu",
     "https://civil.info.hu",
@@ -23,7 +20,8 @@ CEL_OLDALAK = [
 def oldal_szoveg_lekerese(url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=15)
+        # Szigorú timeout: ha 10 másodperc alatt nem válaszol az oldal, megszakítjuk, hogy ne akadjon el!
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -31,10 +29,9 @@ def oldal_szoveg_lekerese(url):
             script.extract()
             
         text = soup.get_text(separator=' ', strip=True)
-        # Oldalanként max. 10.000 karaktert vizsgálunk a gyorsaságért
-        return text[:10000]
+        return text[:8000] # Kicsit visszavettük a méretet a villámgyors feldolgozásért
     except Exception as e:
-        print(f"Hiba történt a(z) {url} letöltésekor: {e}")
+        print(f"Figyelem: A(z) {url} elérését kihagytuk (hiba/időtúllépés): {e}")
         return ""
 
 def kereses_es_szures():
@@ -76,8 +73,7 @@ def kereses_es_szures():
             else:
                 print(f"-> Nincs releváns találat: {url}")
             
-            # Kis szünet két AI kérés között, hogy ne terheljük túl a szervert
-            time.sleep(2)
+            time.sleep(1)
             
         except Exception as e:
             print(f"AI hiba a(z) {url} elemzésekor: {e}")
@@ -99,3 +95,5 @@ def kereses_es_szures():
 
 if __name__ == "__main__":
     kereses_es_szures()
+
+       
