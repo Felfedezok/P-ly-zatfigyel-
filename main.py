@@ -9,7 +9,13 @@ from bs4 import BeautifulSoup
 # IDE ÍRD BE A FIGYELNI KÍVÁNT OLDALAK CÍMÉT:
 # ==========================================
 CEL_OLDALAK = [
-    "https://palyazat.gov.hu",  # Példa: Hivatalos pályázati portál
+    "https://palyazat.gov.hu",
+    "https://civil.info.hu",
+    "https://sarospatak-online.hu/rovat/varoshaza/",
+    "https://kormany.hu"
+    "https://www.nonprofit.hu/palyazatok"
+    "https://palyazatmenedzser.hu/aktualis-palyazatok-civil-nonprofit-szervezeteknek/"
+    # Példa: Hivatalos pályázati portál
     # Ide írhatsz továbbiakat is, vesszővel elválasztva, például:
     # "https://civil.hu/hirek",
 ]
