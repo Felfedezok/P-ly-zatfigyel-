@@ -1,0 +1,28 @@
+name: Pályázatfigyelő futtatása
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Minden nap reggel 8:00-kor lefut
+  workflow_dispatch: # Manuálisan is elindítható gombbal
+
+jobs:
+  futtatas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kód letöltése
+        uses: actions/checkout@v4
+
+      - name: Python beállítása
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Csomagok telepítése
+        run: pip install -r requirements.txt
+
+      - name: Program futtatása
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+        run: python main.py
