@@ -15,7 +15,9 @@ CEL_OLDALAK = [
     "https://kormany.hu"
     "https://www.nonprofit.hu/palyazatok"
     "https://palyazatmenedzser.hu/aktualis-palyazatok-civil-nonprofit-szervezeteknek/"
-    "https://bgazrt.hu"# Példa: Hivatalos pályázati portál
+    "https://bgazrt.hu"
+    "https://www.eon.hu/hu/rolunk/fenntarthatosag/felelosseggel-a-tarsadalomert/tarsadalom/szponzoracio/partnersegek--palyazatok.html"
+    "https://profilii.hu"# Példa: Hivatalos pályázati portál
     # Ide írhatsz továbbiakat is, vesszővel elválasztva, például:
     # "https://civil.hu/hirek",
 ]
