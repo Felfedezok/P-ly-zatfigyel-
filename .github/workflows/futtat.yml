@@ -2,8 +2,9 @@ name: Pályázatfigyelő futtatása
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Minden nap reggel 8:00-kor lefut
-  workflow_dispatch: # Manuálisan is elindítható gombbal
+    # Heti kétszer fut le: Hétfőn és Csütörtökön UTC szerint reggel 6:00-kor (Magyar idő szerint 7:00 vagy 8:00, évszaktól függően)
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch: # Ezzel maradsz meg a manuális (gombbal indítható) lehetőség is!
 
 jobs:
   futtatas:
