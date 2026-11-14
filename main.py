@@ -24,7 +24,7 @@ def oldal_szoveg_lekerese(url):
         # Kinyerjük belőle a szöveget
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Eltávolítjuk a felesleges szkripteket,stílusokat
+        # Eltávolítjuk a felesleges szkripteket, stílusokat
         for script in soup(["script", "style"]):
             script.extract()
             
@@ -48,7 +48,7 @@ def kereses_es_szures():
 
     osszesitett_szoveg = ""
     for url in CEL_OLDALAK:
-        print(Url elemzése: {url}...)
+        print(f"URL elemzése: {url}...")
         tartalom = oldal_szoveg_lekerese(url)
         if tartalom:
             osszesitett_szoveg += f"\n--- FORRÁS URL: {url} ---\n{tartalom}\n"
@@ -60,7 +60,7 @@ def kereses_es_szures():
     # Megkérjük a Gemini AI-t, hogy szűrje ki a nekünk valókat
     prompt = f"""
     Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
-    Itt vannak a megfigyelt weboldalakról leszedett friss szövegek. Kérlek, nézd át őket, és ha bármelyik szövegrészlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítés), válaszd ki, és írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt.
+    Itt vannak a megfigyelt weboldalakról leszedett friss szövegek. Kérlek, nézd át őket, és ha bármelyik szövegrészlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), válaszd ki, és írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt.
     Ha egyik oldalon sincs semmi releváns, akkor pontosan ezt írd: "NINCS_TALALAT".
 
     Letöltött szövegek:
@@ -68,7 +68,7 @@ def kereses_es_szures():
     """
 
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='geminit-2.5-flash' if False else 'gemini-2.5-flash',
         contents=prompt,
     )
     
