@@ -1,5 +1,6 @@
 import os
 import time
+import datetime
 import smtplib
 from email.message import EmailMessage
 from google import genai
@@ -42,6 +43,9 @@ def kereses_es_szures():
         print("Nincs beállítva a GEMINI_API_KEY titok!")
         return
 
+    # Lekérjük a mai dátumot, hogy az AI tudja, mihez képest kell számolni
+    mai_datum = datetime.date.today().strftime("%Y.%m.%d")
+
     client = genai.Client(api_key=GEMINI_KEY)
     osszes_talalat = []
 
@@ -52,9 +56,14 @@ def kereses_es_szures():
             continue
 
         prompt = f"""
+        A mai dátum: {mai_datum}.
         Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
-        Nézd át az alábbi weboldalról leszedett szöveget. Ha bármelyik részlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), írj róla un tömör, magyar nyelvű összefoglalót a forrás linkjével együtt ({url}).
-        Ha nincs semmi releváns, pontosan ezt írd: "NINCS_TALALAT".
+        
+        Nézd át az alábbi weboldalról leszedett szöveget. 
+        1. Keresd meg a gyerekek táborozásához, működéshez vagy épületfelújításhoz kapcsolódó pályázatokat.
+        2. FIGYELEM: Csak azokat a pályázatokat vedd figyelembe, amelyeknek a beadási határideje még nem járt le a mai naphoz ({mai_datum}) képest! A lejárt pályázatokat hagyd figyelmen kívül.
+        3. Ha találsz érvényes pályázatot, írj róla egy tömör, magyar nyelvű összefoglalót a határidő megjelölésével és a forrás linkjével együtt ({url}).
+        4. Ha nincs semmi releváns vagy érvényes pályázat, pontosan ezt írd: "NINCS_TALALAT".
 
         Szöveg ({url}):
         {tartalom}
@@ -83,19 +92,21 @@ def kereses_es_szures():
     msg['To'] = EMAIL_USER 
 
     if osszes_talalat:
-        msg['Subject'] = '🗂️ Új releváns pályázatok érkeztek a civil szervezetednek!'
-        msg.set_content("\n\n".join(osszes_talalat))
+        msg['Subject'] = '🗂️ Új, aktuális pályázatok a civil szervezetednek!'
+        
+        # Ha több oldalon is van találat, megkérhetjük a végén egy utolsó simítással, hogy rendezze őket sorba, 
+        # vagy egyszerűen összefűzzük a dátum szerint szűrt listát.
+        tartalom_szoveg = "\n\n".join(osszes_talalat)
+        msg.set_content(f"A mai napon ({mai_datum}) érvényes, legközelebbi határidejű pályázatok:\n\n{tartalom_szoveg}")
     else:
-        msg['Subject'] = 'ℹ️ Pályázatfigyelő jelentés: Minden rendben, nincsenek új találatok'
-        msg.set_content("A pályázatfigyelő script sikeresen lefutott a megadott oldalakon, de jelenleg nincsenek új, gyerekek táboroztatásával, működéssel vagy épületfelújítással kapcsolatos pályázatok.")
+        msg['Subject'] = f'ℹ️ Pályázatfigyelő jelentés ({mai_datum}): Nincsenek új/aktív találatok'
+        msg.set_content(f"A pályázatfigyelő script sikeresen lefutott {mai_datum}-án. Az oldalak átvizsgálása megtörtént, de jelenleg nincsenek aktív, határidőn belüli releváns pályázatok.")
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
         smtp.login(EMAIL_USER, EMAIL_PASS)
         smtp.send_message(msg)
-    print("Státusz e-mail sikeresen elküldve!")
+    print("Státusz e-mail (dátum szerint szűrve) sikeresen elküldve!")
 
-if __name__ == "__main__":
-    kereses_es_szures()
 
 
        
