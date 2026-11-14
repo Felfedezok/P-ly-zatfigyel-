@@ -16,20 +16,16 @@ CEL_OLDALAK = [
 
 def oldal_szoveg_lekerese(url):
     try:
-        # Letöltjük a weboldal HTML kódját
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
-        # Kinyerjük belőle a szöveget
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Eltávolítjuk a felesleges szkripteket, stílusokat
         for script in soup(["script", "style"]):
             script.extract()
             
         text = soup.get_text(separator=' ', strip=True)
-        # Csak az első 15000 karaktert tartjuk meg, hogy elférjen az AI-ban
         return text[:15000]
     except Exception as e:
         print(f"Hiba történt a(z) {url} letöltésekor: {e}")
@@ -57,7 +53,6 @@ def kereses_es_szures():
         print("Nem sikerült adatot lekérni a megadott oldalakról.")
         return
 
-    # Megkérjük a Gemini AI-t, hogy szűrje ki a nekünk valókat
     prompt = f"""
     Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
     Itt vannak a megfigyelt weboldalakról leszedett friss szövegek. Kérlek, nézd át őket, és ha bármelyik szövegrészlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), válaszd ki, és írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt.
@@ -68,7 +63,7 @@ def kereses_es_szures():
     """
 
     response = client.models.generate_content(
-        model=model='gemini-1.5-flash', if False else model='gemini-1.5-flash',
+        model='gemini-1.5-flash',
         contents=prompt,
     )
     
@@ -76,7 +71,6 @@ def kereses_es_szures():
     print("AI válasz:", eredmeny)
     
     if "NINCS_TALALAT" not in eredmeny:
-        # E-mail küldése, ha talált értékeset
         msg = EmailMessage()
         msg.set_content(eredmeny)
         msg['Subject'] = '🗂️ Új releváns pályázat érkezett a civil szervezetednek!'
