@@ -20,7 +20,6 @@ CEL_OLDALAK = [
 def oldal_szoveg_lekerese(url):
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        # Szigorú timeout: ha 10 másodperc alatt nem válaszol az oldal, megszakítjuk, hogy ne akadjon el!
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
@@ -29,7 +28,7 @@ def oldal_szoveg_lekerese(url):
             script.extract()
             
         text = soup.get_text(separator=' ', strip=True)
-        return text[:8000] # Kicsit visszavettük a méretet a villámgyors feldolgozásért
+        return text[:8000]
     except Exception as e:
         print(f"Figyelem: A(z) {url} elérését kihagytuk (hiba/időtúllépés): {e}")
         return ""
@@ -54,7 +53,7 @@ def kereses_es_szures():
 
         prompt = f"""
         Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
-        Nézd át az alábbi weboldalról leszedett szöveget. Ha bármelyik részlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt ({url}).
+        Nézd át az alábbi weboldalról leszedett szöveget. Ha bármelyik részlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), írj róla un tömör, magyar nyelvű összefoglalót a forrás linkjével együtt ({url}).
         Ha nincs semmi releváns, pontosan ezt írd: "NINCS_TALALAT".
 
         Szöveg ({url}):
@@ -78,22 +77,25 @@ def kereses_es_szures():
         except Exception as e:
             print(f"AI hiba a(z) {url} elemzésekor: {e}")
 
+    # E-mail küldés minden futás alkalmával
+    msg = EmailMessage()
+    msg['From'] = EMAIL_USER
+    msg['To'] = EMAIL_USER 
+
     if osszes_talalat:
-        vegso_uzenet = "\n\n".join(osszes_talalat)
-        msg = EmailMessage()
-        msg.set_content(vegso_uzenet)
         msg['Subject'] = '🗂️ Új releváns pályázatok érkeztek a civil szervezetednek!'
-        msg['From'] = EMAIL_USER
-        msg['To'] = EMAIL_USER 
-        
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_USER, EMAIL_PASS)
-            smtp.send_message(msg)
-        print("E-mail sikeresen elküldve a találatokkal!")
+        msg.set_content("\n\n".join(osszes_talalat))
     else:
-        print("Egyik megadott oldalon sem volt releváns pályázat.")
+        msg['Subject'] = 'ℹ️ Pályázatfigyelő jelentés: Minden rendben, nincsenek új találatok'
+        msg.set_content("A pályázatfigyelő script sikeresen lefutott a megadott oldalakon, de jelenleg nincsenek új, gyerekek táboroztatásával, működéssel vagy épületfelújítással kapcsolatos pályázatok.")
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(EMAIL_USER, EMAIL_PASS)
+        smtp.send_message(msg)
+    print("Státusz e-mail sikeresen elküldve!")
 
 if __name__ == "__main__":
     kereses_es_szures()
+
 
        
