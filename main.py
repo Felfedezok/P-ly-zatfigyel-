@@ -68,7 +68,7 @@ def kereses_es_szures():
     """
 
     response = client.models.generate_content(
-        model='geminit-2.5-flash' if False else 'gemini-2.5-flash',
+        model=model='gemini-1.5-flash', if False else model='gemini-1.5-flash',
         contents=prompt,
     )
     
