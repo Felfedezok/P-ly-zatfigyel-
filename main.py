@@ -1,4 +1,5 @@
 import os
+import time
 import smtplib
 from email.message import EmailMessage
 from google import genai
@@ -14,27 +15,24 @@ CEL_OLDALAK = [
     "https://sarospatak-online.hu/rovat/varoshaza/",
     "https://kormany.hu",
     "https://www.nonprofit.hu/palyazatok",
-    "https://palyazatmenedzser.hu/aktualis-palyazatok-civil-nonprofit-szervezeteknek/",
     "https://bgazrt.hu",
     "https://www.eon.hu/hu/rolunk/fenntarthatosag/felelosseggel-a-tarsadalomert/tarsadalom/szponzoracio/partnersegek--palyazatok.html",
-    "https://profilii.hu",# Példa: Hivatalos pályázati portál
-    # Ide írhatsz továbbiakat is, vesszővel elválasztva, például:
-    # "https://civil.hu/hirek",
+    "https://profilii.hu",
 ]
 
 def oldal_szoveg_lekerese(url):
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(url, headers=headers, timeout=10)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.text, 'html.parser')
-        
         for script in soup(["script", "style"]):
             script.extract()
             
         text = soup.get_text(separator=' ', strip=True)
-        return text[:15000]
+        # Oldalanként max. 10.000 karaktert vizsgálunk a gyorsaságért
+        return text[:10000]
     except Exception as e:
         print(f"Hiba történt a(z) {url} letöltésekor: {e}")
         return ""
@@ -49,48 +47,55 @@ def kereses_es_szures():
         return
 
     client = genai.Client(api_key=GEMINI_KEY)
+    osszes_talalat = []
 
-    osszesitett_szoveg = ""
     for url in CEL_OLDALAK:
         print(f"URL elemzése: {url}...")
         tartalom = oldal_szoveg_lekerese(url)
-        if tartalom:
-            osszesitett_szoveg += f"\n--- FORRÁS URL: {url} ---\n{tartalom}\n"
+        if not tartalom:
+            continue
 
-    if not osszesitett_szoveg.strip():
-        print("Nem sikerült adatot lekérni a megadott oldalakról.")
-        return
+        prompt = f"""
+        Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
+        Nézd át az alábbi weboldalról leszedett szöveget. Ha bármelyik részlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt ({url}).
+        Ha nincs semmi releváns, pontosan ezt írd: "NINCS_TALALAT".
 
-    prompt = f"""
-    Te egy civil szervezet pályázatfigyelő asszisztense vagy. A szervezetünk gyerekek táboroztatásával, működési költségekkel (pl. rezsi, bérek) és épületfelújítással foglalkozik.
-    Itt vannak a megfigyelt weboldalakról leszedett friss szövegek. Kérlek, nézd át őket, és ha bármelyik szövegrészlet releváns civil pályázatra vagy támogatásra utal (tábor, működés, felújítás), válaszd ki, és írj róla egy tömör, magyar nyelvű összefoglalót a forrás linkjével együtt.
-    Ha egyik oldalon sincs semmi releváns, akkor pontosan ezt írd: "NINCS_TALALAT".
+        Szöveg ({url}):
+        {tartalom}
+        """
 
-    Letöltött szövegek:
-    {osszesitett_szoveg}
-    """
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=prompt,
+            )
+            eredmeny = response.text.strip()
+            if "NINCS_TALALAT" not in eredmeny:
+                print(f"-> Találat ezen az oldalon: {url}")
+                osszes_talalat.append(f"=== Forrás: {url} ===\n{eredmeny}")
+            else:
+                print(f"-> Nincs releváns találat: {url}")
+            
+            # Kis szünet két AI kérés között, hogy ne terheljük túl a szervert
+            time.sleep(2)
+            
+        except Exception as e:
+            print(f"AI hiba a(z) {url} elemzésekor: {e}")
 
-    response = client.models.generate_content(
-        model='gemini-3.8-flash',
-        contents=prompt,
-    )
-    
-    eredmeny = response.text
-    print("AI válasz:", eredmeny)
-    
-    if "NINCS_TALALAT" not in eredmeny:
+    if osszes_talalat:
+        vegso_uzenet = "\n\n".join(osszes_talalat)
         msg = EmailMessage()
-        msg.set_content(eredmeny)
-        msg['Subject'] = '🗂️ Új releváns pályázat érkezett a civil szervezetednek!'
+        msg.set_content(vegso_uzenet)
+        msg['Subject'] = '🗂️ Új releváns pályázatok érkeztek a civil szervezetednek!'
         msg['From'] = EMAIL_USER
         msg['To'] = EMAIL_USER 
         
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_USER, EMAIL_PASS)
             smtp.send_message(msg)
-        print("E-mail elküldve!")
+        print("E-mail sikeresen elküldve a találatokkal!")
     else:
-        print("Az AI nem talált releváns pályázatot a megadott oldalakon.")
+        print("Egyik megadott oldalon sem volt releváns pályázat.")
 
 if __name__ == "__main__":
     kereses_es_szures()
